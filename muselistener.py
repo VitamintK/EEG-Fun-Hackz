@@ -10,18 +10,16 @@ from pythonosc import osc_server
 ranges = []
 max_noise = []
 queue = deque([], 20)
-left_pressed = 50
-right_pressed = 50
+left_pressed = 170
+right_pressed = 170
 key_buffer = ""
 def calibrate_base(unused_addr, args, ch1, ch2, ch3, ch4):
-    print("this is still being called")
     ranges.append((ch1, ch2, ch3, ch4))
     if len(ranges) == 301:
         server.shutdown()
         print('hello')
 
 def calibrate_wink(unused_addr, args, ch1, ch2, ch3, ch4):
-    print("")
     ranges.append((ch1, ch2, ch3, ch4))
     if len(ranges) == 350:
         server.shutdown()
@@ -31,29 +29,26 @@ def eeg_handler(unused_addr, args, ch1, ch2, ch3, ch4):
     global left_pressed
     global right_pressed
     queue.append((ch1, ch2, ch3, ch4))
-    #print(max(queue[-10:-1]))
-    #print("EEG (uV) per channel: ", ch1, ch2, ch3, ch4)
-#    server.shutdown()
     mins = list(map(min, zip(*queue)))
     maxes = list(map(max, zip(*queue)))
     k=False
     if abs(maxes[left['index']] - [ch1,ch2,ch3,ch4][left['index']]) > left['value'] or abs(mins[left['index']] - [ch1,ch2,ch3,ch4][left['index']]) > left['value']:
         right_pressed -= 1
         print("left wink")
-        if left_pressed == 0 and right_pressed < 35:
+        if left_pressed == 0 and right_pressed < 100:
             #SendInput(Keyboard(VK_LEFT))
             key_buffer = key_buffer + "0"
             print(key_buffer)
-            left_pressed = 50
+            left_pressed = 200
         k=True
     elif abs(maxes[right['index']] - [ch1,ch2,ch3,ch4][right['index']]) > right['value'] or abs(mins[right['index']] - [ch1,ch2,ch3,ch4][right['index']]) > right['value']:
         print("right wink")
         left_pressed -= 1
-        if right_pressed == 0 and left_pressed < 35:
+        if right_pressed == 0 and left_pressed < 100:
             #SendInput(Keyboard(VK_RIGHT))
             key_buffer = key_buffer + "1"
-            print("{:05}".format(key_buffer))
-            right_pressed = 50
+            print(key_buffer)
+            right_pressed = 200
 
         k=True
     if k == False:
@@ -61,8 +56,10 @@ def eeg_handler(unused_addr, args, ch1, ch2, ch3, ch4):
         right_pressed -= 1
         if left_pressed < 0:
             left_pressed = 0
+            #print('reset')
         if right_pressed < 0:
             right_pressed = 0
+            #print('reset')
         #print("--")
     if len(key_buffer) == 5:
         k = key_buffer
